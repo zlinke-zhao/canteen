@@ -3,7 +3,7 @@ const $ = (id) => document.getElementById(id);
 // 二级目录部署：页面在 "/" 时 BASE=""，挂在 "/XXX/" 时 BASE="/XXX"。
 // 独立运行与通过统一网关访问都正确，静态资源用相对路径配套。
 const BASE = location.pathname.replace(/\/+$/, "");
-const state = { token: localStorage.getItem("token"), user: null, orderNat: "tq" };
+const state = { token: localStorage.getItem("token"), user: null, orderNat: "cn" };
 
 // ---------- 双语 ----------
 const I18N = {
@@ -16,7 +16,7 @@ const I18N = {
     lbl_date_to: "到", btn_search: "搜索", btn_search2: "搜索",
     chk_guest: "客户用餐登记", lbl_guest_count: "用餐人数", btn_add: "添加",
     chk_mode_self: "个人点餐", lbl_emp_search: "按工号搜索",
-    lbl_nat: "点餐对象", opt_nat_tq: "中国员工点餐", opt_nat_vn: "越南员工点餐",
+    lbl_nat: "点餐对象", opt_nat_cn: "中国员工点餐", opt_nat_vn: "越南员工点餐",
     ph_emp_kw: "输入工号或姓名后回车", chk_mode_dept: "按部门点",
     btn_save_all: "保存全部", btn_saving: "保存中…",
     daily_title: "每日各部门登记 · BIỂU BÁO CƠM HÀNG NGÀY",
@@ -28,7 +28,7 @@ const I18N = {
     ph_auth_kw: "搜索工号/姓名添加授权", btn_auth_add: "添加授权",
     th_emp_no: "工号", th_name: "姓名", th_granted_by: "授权人", th_action: "操作",
     canteen_desc: "食堂对应「部门节点代号」：下属部门代号自动包含上级代号，因此填 1013 即覆盖 1013 及其全部下级部门。特殊食堂（如安阳）可填「规则JSON」按多前缀/名称子集覆盖。",
-    ph_ct_code: "部门代号，如 1013", ph_ct_name: "食堂名称，如 越南旺盈食堂",
+    ph_ct_code: "部门代号，如 1013", ph_ct_name: "食堂名称，如 A食堂",
     ph_ct_rules: "规则JSON(可选)：留空=按代号前缀；特殊食堂填 [{\"type\":\"prefix\",\"value\":\"101305\"}] 或 [{\"type\":\"prefix_name\",\"prefix\":\"1013\",\"name\":\"安阳\"}]",
     canteen_desc2: "提示：点餐页的「中国/越南员工点餐」决定部门名单范围与写入餐厅；按工号点餐不受限。",
     btn_add_row: "添加一行", btn_save_canteen: "保存食堂设定", btn_save_meal_time: "保存开餐时间",
@@ -37,7 +37,7 @@ const I18N = {
     h_date: "日期", h_emp_no: "工号", h_name: "姓名",
     meal_breakfast: "早餐", meal_lunch: "中餐", meal_wucan: "午餐", meal_dinner: "晚餐", meal_midnight: "夜餐",
     r_no: "序号", r_dept: "部门", r_manager: "负责人", r_subtotal: "小计", r_total: "汇总",
-    sub_tq: "中", sub_vn: "越",
+    sub_cn: "中", sub_vn: "越",
     // 提示 / 消息
     hint_base: "个人点餐：设好日期范围后点「搜索」，列出该时段已有登记，未点餐的日期自动补一行；按部门点餐一次只处理一天（到日期自动隐藏），选部门后先列已登记的，再补未登记的人。同一餐不可在两个食堂重复点。各餐标题上有「全选」按钮，点击才将该餐批量勾给本部门全部人员（按班次互斥会自动取消对班）；单格手动勾选只影响本人。只能点开餐时间 2 小时以后的餐，过期/过去的餐次自动禁用。",
     hint_stat: "统计授权人员：可为「当前食堂」代号起头的全部部门点餐（如食堂 1013 → 1013 及其所有下级部门），按部门下拉已放开到整个食堂范围。",
@@ -61,7 +61,7 @@ const I18N = {
     confirm_remove: "移除 {emp} 的统计权限？", alert_pick_emp: "请先搜索并选择一名员工",
     msg_canteen_saved: "已保存 {n} 个食堂", canteen_all: "全部食堂",
     report_none: "暂无登记数据",
-    rep_shift_day: "白班", rep_shift_night: "夜班", rep_nat_tq: "中国餐厅", rep_nat_vn: "越南餐厅",
+    rep_shift_day: "白班", rep_shift_night: "夜班", rep_nat_cn: "中国餐厅", rep_nat_vn: "越南餐厅",
     shift_conflict: "白班与夜班餐次互斥（早餐不限）：已自动取消该员工另一班次的已选餐",
     sel_all: "全选", sel_all_hint: "点击将该餐批量勾给全部人员",
     sel_all_done: "已全选 {meal}（按班次互斥已自动取消对班）",
@@ -76,7 +76,7 @@ const I18N = {
     lbl_date_to: "Đến ngày", btn_search: "Tìm kiếm", btn_search2: "Tìm kiếm",
     chk_guest: "Đăng ký khách ăn", lbl_guest_count: "Số khách", btn_add: "Thêm",
     chk_mode_self: "Đăng ký cá nhân", lbl_emp_search: "Tìm theo mã NV",
-    lbl_nat: "Đối tượng", opt_nat_tq: "Nhân viên TQ", opt_nat_vn: "Nhân viên VN",
+    lbl_nat: "Đối tượng", opt_nat_cn: "Nhân viên CN", opt_nat_vn: "Nhân viên VN",
     ph_emp_kw: "Nhập mã NV hoặc tên rồi Enter", chk_mode_dept: "Theo phòng ban",
     btn_save_all: "Lưu tất cả", btn_saving: "Đang lưu…",
     daily_title: "Đăng ký hằng ngày theo phòng ban · BIỂU BÁO CƠM HÀNG NGÀY",
@@ -88,15 +88,15 @@ const I18N = {
     ph_auth_kw: "Tìm mã NV / tên để thêm phân quyền", btn_auth_add: "Thêm phân quyền",
     th_emp_no: "Mã NV", th_name: "Họ tên", th_granted_by: "Người cấp quyền", th_action: "Thao tác",
     canteen_desc: "Căng tin ứng với \"mã phòng ban\": mã phòng ban cấp dưới tự động gồm mã cấp trên, nên điền 1013 là phủ 1013 và toàn bộ phòng ban cấp dưới. Căng tin đặc biệt (như An Dương) có thể điền \"Quy tắc JSON\" để phủ nhiều tiền tố / tập con theo tên.",
-    ph_ct_code: "Mã phòng ban, vd 1013", ph_ct_name: "Tên căng tin, vd Căng tin Vượng Oanh VN",
+    ph_ct_code: "Mã phòng ban, vd 1013", ph_ct_name: "Tên căng tin, vd Căng tin A",
     ph_ct_rules: "Quy tắc JSON (tùy chọn): để trống=theo tiền tố mã; căng tin đặc biệt điền [{\"type\":\"prefix\",\"value\":\"101305\"}] hoặc [{\"type\":\"prefix_name\",\"prefix\":\"1013\",\"name\":\"An Dương\"}]",
-    canteen_desc2: "Gợi ý: lựa chọn \"Nhân viên TQ/VN\" trên trang đăng ký quyết định phạm vi danh sách và căng tin ghi nhận; tìm theo mã NV không bị giới hạn.",
+    canteen_desc2: "Gợi ý: lựa chọn \"Nhân viên CN/VN\" trên trang đăng ký quyết định phạm vi danh sách và căng tin ghi nhận; tìm theo mã NV không bị giới hạn.",
     btn_add_row: "Thêm dòng", btn_save_canteen: "Lưu cấu hình căng tin", btn_save_meal_time: "Lưu giờ ăn",
     btn_remove_auth: "Gỡ bỏ", btn_delete: "Xóa",
     h_date: "Ngày", h_emp_no: "Mã NV", h_name: "Họ tên",
     meal_breakfast: "Bữa sáng", meal_lunch: "Bữa trưa", meal_wucan: "Cơm trưa 2", meal_dinner: "Bữa tối", meal_midnight: "Cơm đêm",
     r_no: "STT", r_dept: "Phòng ban", r_manager: "Người phụ trách", r_subtotal: "Cộng", r_total: "Tổng cộng",
-    sub_tq: "TQ", sub_vn: "VN",
+    sub_cn: "CN", sub_vn: "VN",
     hint_base: "Đăng ký cá nhân: chọn khoảng ngày rồi bấm \"Tìm kiếm\", hệ thống liệt kê đăng ký đã có trong khoảng đó, ngày chưa đăng ký tự thêm dòng; đăng ký theo phòng ban mỗi lần chỉ xử lý một ngày (ô \"Đến ngày\" tự ẩn), chọn phòng ban sẽ liệt kê người đã đăng ký trước rồi bổ sung người chưa đăng ký. Cùng một bữa không thể đăng ký ở hai căng tin. Mỗi tiêu đề bữa có nút \"Chọn tất cả\": nhấn mới tích bữa này cho toàn bộ phòng ban (theo ca loại trừ nhau sẽ tự bỏ ca đối diện); tích thủ công từng ô chỉ ảnh hưởng bản thân. Chỉ được đặt bữa cách giờ ăn ít nhất 2 tiếng, bữa quá hạn/quá khứ tự vô hiệu.",
     hint_stat: "Người được phân quyền thống kê: có thể đăng ký cho mọi phòng ban có mã bắt đầu bằng mã căng tin hiện tại (vd căng tin 1013 → 1013 và tất cả phòng ban cấp dưới), danh sách phòng ban đã mở rộng toàn bộ phạm vi căng tin.",
     err_login: "Mã nhân viên hoặc mật khẩu sai", err_token: "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại",
@@ -119,7 +119,7 @@ const I18N = {
     confirm_remove: "Gỡ quyền thống kê của {emp}?", alert_pick_emp: "Vui lòng tìm và chọn một nhân viên",
     msg_canteen_saved: "Đã lưu {n} căng tin", canteen_all: "Tất cả căng tin",
     report_none: "Chưa có dữ liệu đăng ký",
-    rep_shift_day: "Ca ngày", rep_shift_night: "Ca đêm", rep_nat_tq: "Căng tin TQ", rep_nat_vn: "Căng tin VN",
+    rep_shift_day: "Ca ngày", rep_shift_night: "Ca đêm", rep_nat_cn: "Căng tin CN", rep_nat_vn: "Căng tin VN",
     shift_conflict: "Ca ngày và ca đêm loại trừ nhau (bữa sáng không giới hạn): đã bỏ các bữa ca kia của nhân viên này",
     sel_all: "Chọn tất cả", sel_all_hint: "Nhấn để tích bữa này cho tất cả mọi người",
     sel_all_done: "Đã chọn tất cả {meal} (theo ca loại trừ nhau, tự bỏ ca đối diện)",
@@ -232,7 +232,7 @@ function switchView(v) {
 }
 
 // ---------- 点餐 ----------
-// 5 个基础餐别（中国/越南餐厅由后端按员工国籍写入对应 *_tq/*_vn）
+// 5 个基础餐别（中国/越南餐厅由后端按员工国籍写入对应 *_cn/*_vn）
 const MEAL_KEYS = ["breakfast", "lunch", "wucan", "dinner", "midnight"];
 // 班次分组（早餐共用 | 白班:中餐+午餐 | 夜班:晚餐+夜餐），用于点餐表头与报表
 const SHIFT_GROUPS = [
@@ -354,9 +354,9 @@ async function initOrder() {
   show($("guest-box"), false);
   $("mode-self").checked = true;
   $("mode-dept").checked = false;
-  $("nat-tq").checked = true;
+  $("nat-cn").checked = true;
   $("nat-vn").checked = false;
-  state.orderNat = "tq";
+  state.orderNat = "cn";
   orderMode = "self";
   show($("date-to-label"), true);
   $("dept-sel").value = "";
@@ -418,7 +418,7 @@ async function loadDraft() {
     (d.orders || []).forEach(o => {
       const key = o.emp_no + "|" + o.meal_date;
       const f = emptyFlags();
-      MEAL_KEYS.forEach(k => f[k] = !!(o[k + "_tq"] || o[k + "_vn"]));
+      MEAL_KEYS.forEach(k => f[k] = !!(o[k + "_cn"] || o[k + "_vn"]));
       draft[key] = f;
       savedFlags[key] = Object.assign({}, f);   // 记录已存在状态，过期餐次保留历史
       existingKeys.add(key);
@@ -534,10 +534,10 @@ $("mode-dept").addEventListener("change", async (e) => {
 
 // 中国/越南员工点餐：决定部门名单范围（按工号点餐不受限）；切换即按当前模式重载名单
 function onNatChange() {
-  state.orderNat = $("nat-vn").checked ? "vn" : "tq";
+  state.orderNat = $("nat-vn").checked ? "vn" : "cn";
   if (orderMode === "dept" && $("dept-sel").value) loadDeptRows($("dept-sel").value);
 }
-$("nat-tq").addEventListener("change", onNatChange);
+$("nat-cn").addEventListener("change", onNatChange);
 $("nat-vn").addEventListener("change", onNatChange);
 
 // 按工号搜索（回车或按钮）：加入名单并载入其时段内记录
@@ -671,7 +671,7 @@ $("save-order").addEventListener("click", async () => {
 // ---------- 报表渲染 ----------
 // 报表布局：中国 / 越南 分为左右两大块，每块 5 餐（早餐 | 白班中餐 | 白班午餐 | 夜班晚餐 | 夜班夜宵）
 const REPORT_BLOCKS = [
-  { nat: "tq", nameKey: "rep_nat_tq", bg: "#fce4d6" },
+  { nat: "cn", nameKey: "rep_nat_cn", bg: "#fce4d6" },
   { nat: "vn", nameKey: "rep_nat_vn", bg: "#ddebf7" },
 ];
 const REPORT_MEALS = ["breakfast", "lunch", "wucan", "dinner", "midnight"];

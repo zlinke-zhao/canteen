@@ -7,7 +7,7 @@ from db import query, vb, dec_gbk
 
 router = APIRouter(prefix="/api/report", tags=["report"])
 
-# 5 个餐别（含新增「午餐」wucan）；每餐分 中(tq)/越(vn) 两列
+# 5 个餐别（含新增「午餐」wucan）；每餐分 中(cn)/越(vn) 两列
 MEALS = ["breakfast", "lunch", "wucan", "dinner", "midnight"]
 MEAL_LABELS = {"breakfast": "早餐", "lunch": "中餐", "wucan": "午餐",
                "dinner": "晚餐", "midnight": "夜餐"}
@@ -18,10 +18,10 @@ def _group_sql(where, params, canteen=""):
     if canteen:
         where += " AND o.canteen_code = %s"
         params = params + (canteen,)
-    # 8 个勾选位直接求和（中国餐厅 *_tq / 越南餐厅 *_vn）
+    # 8 个勾选位直接求和（中国餐厅 *_cn / 越南餐厅 *_vn）
     cols = []
     for m in MEALS:
-        cols.append(f"SUM(ISNULL(o.{m}_tq, 0)) AS {m}_tq")
+        cols.append(f"SUM(ISNULL(o.{m}_cn, 0)) AS {m}_cn")
         cols.append(f"SUM(ISNULL(o.{m}_vn, 0)) AS {m}_vn")
     # deptdesc/deptmanager 是 varchar(GBK)，hex 取字节客户端解码
     return f"""
@@ -39,14 +39,14 @@ def _group_sql(where, params, canteen=""):
 
 def _shape(rows):
     depts = []
-    total = {f"{m}_{nat}": 0 for m in MEALS for nat in ("tq", "vn")}
+    total = {f"{m}_{nat}": 0 for m in MEALS for nat in ("cn", "vn")}
     for r in rows:
         sub = 0
         d = {"deptno": r["deptno"],
              "dept_name": (dec_gbk(r.get("dept_raw")) or "").strip() or "未分配",
              "manager": dec_gbk(r.get("mgr_raw")) or ""}
         for m in MEALS:
-            for nat in ("tq", "vn"):
+            for nat in ("cn", "vn"):
                 v = r.get(f"{m}_{nat}") or 0
                 d[f"{m}_{nat}"] = v
                 total[f"{m}_{nat}"] += v

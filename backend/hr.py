@@ -285,7 +285,7 @@ def get_dept_employees(deptno, limit=500, nat=None):
     """某部门（含下属部门）全部在职员工，按部门点餐用。
     国籍判定（权威+兜底）：dbo.fn_DetectLanguage(e_name)='越南文' 或 e_name 含越南语变音字符
     （fn 对只含葡/西语共用变音的名字会误判为『英文』，用变音字符兜底补回真越南人）。
-      nat='tq' 剔除越南籍（只留中国员工，含 e_name 空/中文/英文）；
+      nat='cn' 剔除越南籍（只留中国员工，含 e_name 空/中文/英文）；
       nat='vn' 只留越南籍；其他=不过滤。
     过滤在应用层完成（部门子集已限定范围，量小且判定需变音字符）；按工号点餐不受 nat 限制。"""
     if not deptno:
@@ -302,6 +302,6 @@ def get_dept_employees(deptno, limit=500, nat=None):
     out = _shape_list(rows)
     if nat == "vn":
         out = [e for e in out if is_vn_employee(e)]
-    elif nat == "tq":
+    elif nat == "cn":
         out = [e for e in out if not is_vn_employee(e)]
     return out

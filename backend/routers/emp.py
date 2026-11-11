@@ -99,7 +99,7 @@ def depts(canteen: str = Query(""), user=Depends(get_current_user)):
 def dept_employees(deptno: str = Query(...), canteen: str = Query(""),
                    nat: str = Query(""), user=Depends(get_current_user)):
     """某部门（含下属）在职员工；统计名单内人员可查当前食堂下任意部门。
-    nat='tq' 只留中国员工（剔除越南籍），nat='vn' 只留越南籍；按工号点餐不受限制。"""
+    nat='cn' 只留中国员工（剔除越南籍），nat='vn' 只留越南籍；按工号点餐不受限制。"""
     if not _dept_scope_ok(deptno, user, canteen):
         raise HTTPException(status_code=403,
                             detail="只能查看本部门/下属部门，或当前食堂范围内的部门")

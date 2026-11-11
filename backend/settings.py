@@ -5,8 +5,8 @@ import json
 from db import query, execute
 
 DEFAULT_CANTEENS = [
-    {"code": "1013", "name": "越南旺盈食堂"},
-    {"code": "1020", "name": "越南至美食堂"},
+    {"code": "1013", "name": "A食堂"},
+    {"code": "1020", "name": "B食堂"},
 ]
 
 

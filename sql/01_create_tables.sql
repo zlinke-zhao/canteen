@@ -11,8 +11,8 @@
 -- ---------------------------------------------------------------------
 -- 1) meal_order  点餐主表（每人每天一条记录，不可重复）
 --    餐别: 早餐 breakfast / 中餐 lunch / 晚餐 dinner / 夜宵 midnight
---    每餐分 中国 TQ / 越南 VN 两列统计 —— 由就餐人下单时「自己选择」国籍，
---    记录级 nationality 决定该人当天所有餐归入 TQ 还是 VN 列。
+--    每餐分 中国 CN / 越南 VN 两列统计 —— 由就餐人下单时「自己选择」国籍，
+--    记录级 nationality 决定该人当天所有餐归入 CN 还是 VN 列。
 -- ---------------------------------------------------------------------
 IF OBJECT_ID('dbo.meal_order', 'U') IS NULL
 CREATE TABLE dbo.meal_order (
@@ -23,7 +23,7 @@ CREATE TABLE dbo.meal_order (
     dept_name   NVARCHAR(200)  NULL,                     -- 部门名（冗余，取自 V_deptfourlevel.deptnodesc）
     companyid   NVARCHAR(10)   NULL,                     -- 公司（冗余，便于多公司隔离）
     meal_date   DATE           NOT NULL,                 -- 用餐日期
-    nationality CHAR(2)        NOT NULL,                 -- 'TQ' 中国 / 'VN' 越南（本人自选）
+    nationality CHAR(2)        NOT NULL,                 -- 'CN' 中国 / 'VN' 越南（本人自选）
     breakfast   BIT            NOT NULL DEFAULT 0,       -- 早餐
     lunch       BIT            NOT NULL DEFAULT 0,       -- 中餐
     dinner      BIT            NOT NULL DEFAULT 0,       -- 晚餐

@@ -34,7 +34,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM dbo.meal_config WHERE cfg_key = N'canteens')
     INSERT INTO dbo.meal_config (cfg_key, cfg_value)
     VALUES (N'canteens',
-            N'[{"code":"1013","name":"越南旺盈食堂"},{"code":"1020","name":"越南至美食堂"}]');
+            N'[{"code":"1013","name":"A食堂"},{"code":"1020","name":"B食堂"}]');
 GO
 
 -- 5) 验证

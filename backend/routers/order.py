@@ -14,16 +14,16 @@ from schemas import OrderUpsert, OrderBatch
 router = APIRouter(prefix="/api", tags=["order"])
 
 # 10 个餐别存储列（中国餐厅 / 越南餐厅，各 早/中/午/晚/夜餐）
-FLAGS = ["breakfast_tq", "breakfast_vn", "lunch_tq", "lunch_vn", "wucan_tq", "wucan_vn",
-         "dinner_tq", "dinner_vn", "midnight_tq", "midnight_vn"]
-# 5 个基础餐别（点餐页/接口用，后端按点餐模式展开到 *_tq/*_vn）
+FLAGS = ["breakfast_cn", "breakfast_vn", "lunch_cn", "lunch_vn", "wucan_cn", "wucan_vn",
+         "dinner_cn", "dinner_vn", "midnight_cn", "midnight_vn"]
+# 5 个基础餐别（点餐页/接口用，后端按点餐模式展开到 *_cn/*_vn）
 BASE_MEALS = ["breakfast", "lunch", "wucan", "dinner", "midnight"]
 MEAL_LABELS = {
-    "breakfast_tq": "早餐", "breakfast_vn": "早餐",
-    "lunch_tq": "中餐", "lunch_vn": "中餐",
-    "wucan_tq": "午餐", "wucan_vn": "午餐",
-    "dinner_tq": "晚餐", "dinner_vn": "晚餐",
-    "midnight_tq": "夜餐", "midnight_vn": "夜餐",
+    "breakfast_cn": "早餐", "breakfast_vn": "早餐",
+    "lunch_cn": "中餐", "lunch_vn": "中餐",
+    "wucan_cn": "午餐", "wucan_vn": "午餐",
+    "dinner_cn": "晚餐", "dinner_vn": "晚餐",
+    "midnight_cn": "夜餐", "midnight_vn": "夜餐",
 }
 
 
@@ -132,14 +132,14 @@ def _check_perm(target_emp_no, user, canteen_code=""):
 
 def _legacy_sync(vals):
     """由新 10 列推导旧列值（旧列 NOT NULL，保持兼容）：
-    nationality：勾了中国列→TQ，只勾越南列→VN，都空→TQ 占位；
+    nationality：勾了中国列→CN，只勾越南列→VN，都空→CN 占位；
     旧 4 个 bit 列 = 对应餐别中/越任一勾选（新『午餐』折入 lunch 旧位）。"""
-    nat = "TQ" if (vals["breakfast_tq"] or vals["lunch_tq"] or vals["wucan_tq"]
-                   or vals["dinner_tq"] or vals["midnight_tq"]) else "VN"
-    return nat, (vals["breakfast_tq"] or vals["breakfast_vn"]), \
-        (vals["lunch_tq"] or vals["lunch_vn"] or vals["wucan_tq"] or vals["wucan_vn"]), \
-        (vals["dinner_tq"] or vals["dinner_vn"]), \
-        (vals["midnight_tq"] or vals["midnight_vn"])
+    nat = "CN" if (vals["breakfast_cn"] or vals["lunch_cn"] or vals["wucan_cn"]
+                   or vals["dinner_cn"] or vals["midnight_cn"]) else "VN"
+    return nat, (vals["breakfast_cn"] or vals["breakfast_vn"]), \
+        (vals["lunch_cn"] or vals["lunch_vn"] or vals["wucan_cn"] or vals["wucan_vn"]), \
+        (vals["dinner_cn"] or vals["dinner_vn"]), \
+        (vals["midnight_cn"] or vals["midnight_vn"])
 
 
 def _profile(emp_no, cache=None):
@@ -174,7 +174,7 @@ def _profile_uncached(emp_no):
 def _upsert_one(emp_no, meal_date, item, orderer_no, canteen_code, prof_cache=None, order_nat="", meal_times=None):
     """单条 upsert（键：emp_no + meal_date + canteen_code）。
     返回 inserted / updated / deleted / none / skip；跨食堂同餐冲突抛 OrderConflict。
-    order_nat='vn' 写越南餐厅(*_vn)，'tq' 写中国餐厅(*_tq)；为空则按员工国籍回退。
+    order_nat='vn' 写越南餐厅(*_vn)，'cn' 写中国餐厅(*_cn)；为空则按员工国籍回退。
     特例：中国模式可输入越南人工号点中国餐厅、越南模式可输入中国人工号点越南餐厅。
     只能点 2 小时以后的餐：新建订单不允许过期餐次（拦截），已保存的历史记录予以保留。"""
     prof = _profile(emp_no, prof_cache)
@@ -182,7 +182,7 @@ def _upsert_one(emp_no, meal_date, item, orderer_no, canteen_code, prof_cache=No
         return "skip"
     emp_name, deptno, dept_name, companyid, _active, name_vn, is_vn = prof
     # 写入餐厅以「点餐模式」为准（order_nat），而非员工实际国籍；为空时回退国籍
-    nat_is_vn = (order_nat == "vn") if order_nat in ("tq", "vn") else bool(is_vn)
+    nat_is_vn = (order_nat == "vn") if order_nat in ("cn", "vn") else bool(is_vn)
     vals = {}
     try:
         existing = query(
@@ -196,12 +196,12 @@ def _upsert_one(emp_no, meal_date, item, orderer_no, canteen_code, prof_cache=No
     ex_row = existing[0] if existing else None
     for m in BASE_MEALS:
         on = 1 if getattr(item, m) else 0
-        col = m + ("_vn" if nat_is_vn else "_tq")
+        col = m + ("_vn" if nat_is_vn else "_cn")
         if on and not meal_orderable(meal_date, m, meal_times):
             # 过期/不足提前量：不允许新建；已保存的历史记录（DB 同列已有值）予以保留
             if not (ex_row and ex_row.get(col)):
                 on = 0
-        vals[m + "_tq"] = on if not nat_is_vn else 0
+        vals[m + "_cn"] = on if not nat_is_vn else 0
         vals[m + "_vn"] = on if nat_is_vn else 0
     if not any(vals.values()):
         if existing:
@@ -296,9 +296,9 @@ def list_orders(date_from: str = Query(...), date_to: str = Query(...),
         params.append(canteen)
     rows = query(
         f"""SELECT emp_no, emp_name, meal_date, canteen_code, orderer_no,
-                   breakfast_tq, breakfast_vn, lunch_tq, lunch_vn,
-                   wucan_tq, wucan_vn, dinner_tq, dinner_vn,
-                   midnight_tq, midnight_vn, remark
+                   breakfast_cn, breakfast_vn, lunch_cn, lunch_vn,
+                   wucan_cn, wucan_vn, dinner_cn, dinner_vn,
+                   midnight_cn, midnight_vn, remark
               FROM dbo.meal_order
              WHERE {' AND '.join(conds)}
              ORDER BY meal_date, emp_no""",
