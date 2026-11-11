@@ -12,20 +12,33 @@ from db import query, vb, dec_gbk
 
 router = APIRouter(prefix="/api/report", tags=["report"])
 
-# 明细报表列定义（与真实库 meal_order 对齐：5 餐 × 中/越 = 10 个勾选列）
+# 明细报表列定义（与真实库 meal_order 对齐：5 餐 × 中/越）
 DETAIL_BASE = [
     ("meal_date", "日期"), ("emp_no", "工号"), ("emp_name", "姓名"),
     ("dept_name", "部门"), ("companyid", "公司"), ("canteen_code", "食堂代号"),
 ]
-DETAIL_MEALS = [
-    ("breakfast_cn", "早餐(中)"), ("breakfast_vn", "早餐(越)"),
-    ("lunch_cn", "中餐(中)"), ("lunch_vn", "中餐(越)"),
-    ("wucan_cn", "午餐(中)"), ("wucan_vn", "午餐(越)"),
-    ("dinner_cn", "晚餐(中)"), ("dinner_vn", "晚餐(越)"),
-    ("midnight_cn", "夜宵(中)"), ("midnight_vn", "夜宵(越)"),
+CN_MEALS = [
+    ("breakfast_cn", "早餐(中)"), ("lunch_cn", "中餐(中)"), ("wucan_cn", "午餐(中)"),
+    ("dinner_cn", "晚餐(中)"), ("midnight_cn", "夜宵(中)"),
+]
+VN_MEALS = [
+    ("breakfast_vn", "早餐(越)"), ("lunch_vn", "中餐(越)"), ("wucan_vn", "午餐(越)"),
+    ("dinner_vn", "晚餐(越)"), ("midnight_vn", "夜宵(越)"),
 ]
 DETAIL_TAIL = [("orderer_no", "代点人"), ("remark", "备注"), ("created_at", "下单时间")]
-DETAIL_COLS = DETAIL_BASE + DETAIL_MEALS + DETAIL_TAIL
+
+
+# 按「餐厅」维度动态选取餐位列：cn=中国餐厅 / vn=越南餐厅 / 空=全部(中+越)
+def _meals_for(nat):
+    if nat == "cn":
+        return CN_MEALS
+    if nat == "vn":
+        return VN_MEALS
+    return CN_MEALS + VN_MEALS
+
+
+def _detail_cols(nat):
+    return DETAIL_BASE + _meals_for(nat) + DETAIL_TAIL
 
 # 5 个餐别（含新增「午餐」wucan）；每餐分 中(cn)/越(vn) 两列
 MEALS = ["breakfast", "lunch", "wucan", "dinner", "midnight"]
@@ -107,9 +120,9 @@ def monthly(year: int = Query(...), month: int = Query(...), canteen: str = Quer
             "departments": depts, "total": total}
 
 
-def _fmt_row(r):
+def _fmt_row(r, nat=""):
     out = {}
-    for c, _ in DETAIL_COLS:
+    for c, _ in _detail_cols(nat):
         v = r.get(c)
         if c == "meal_date" and v is not None:
             v = v.strftime("%Y-%m-%d") if hasattr(v, "strftime") else str(v)
@@ -119,15 +132,17 @@ def _fmt_row(r):
     return out
 
 
-def _detail_csv(rows, total, grand, start, end):
+def _detail_csv(rows, total, grand, start, end, nat=""):
+    cols = _detail_cols(nat)
+    meals = _meals_for(nat)
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow([l for _, l in DETAIL_COLS])
+    w.writerow([l for _, l in cols])
     for r in rows:
-        w.writerow([r.get(c, "") for c, _ in DETAIL_COLS])
+        w.writerow([r.get(c, "") for c, _ in cols])
     # 合计行
     trow = ["", "", "汇总", "", "", ""]
-    for c, _ in DETAIL_MEALS:
+    for c, _ in meals:
         trow.append(total[c])
     trow += ["", "", "总餐次 %d" % grand]
     w.writerow(trow)
@@ -141,21 +156,22 @@ def _detail_csv(rows, total, grand, start, end):
 
 @router.get("/detail")
 def detail(start: str = Query(...), end: str = Query(...),
-           canteen: str = Query(""), format: str = Query(""),
+           canteen: str = Query(""), nat: str = Query(""), format: str = Query(""),
            user=Depends(get_current_user)):
-    """按日期范围导出明细报表（每人每天一条记录）。"""
+    """按日期范围 + 餐厅维度导出明细报表（每人每天一条记录）。"""
     flags = get_user_flags(user["sub"])
     if not flags["can_stat"]:
         raise HTTPException(status_code=403, detail="无汇总统计权限")
     if start > end:
         raise HTTPException(status_code=400, detail="起始日期不能晚于结束日期")
+    meals = _meals_for(nat)
     params = [start, end]
     where = "o.meal_date >= %s AND o.meal_date <= %s"
     if canteen:
         where += " AND o.canteen_code = %s"
         params.append(canteen)
     base_cols = ", ".join("o.%s" % c for c, _ in DETAIL_BASE)
-    meal_cols = ", ".join("ISNULL(o.%s,0) AS %s" % (c, c) for c, _ in DETAIL_MEALS)
+    meal_cols = ", ".join("ISNULL(o.%s,0) AS %s" % (c, c) for c, _ in meals)
     tail_cols = ", ".join("o.%s" % c for c, _ in DETAIL_TAIL)
     sql = """
         SELECT {base}, {meal}, {tail}
@@ -164,17 +180,17 @@ def detail(start: str = Query(...), end: str = Query(...),
         ORDER BY o.meal_date, o.deptno, o.emp_no
     """.format(base=base_cols, meal=meal_cols, tail=tail_cols, where=where)
     rows = query(sql, params)
-    total = {c: 0 for c, _ in DETAIL_MEALS}
+    total = {c: 0 for c, _ in meals}
     grand = 0
     for r in rows:
-        for c, _ in DETAIL_MEALS:
+        for c, _ in meals:
             v = r.get(c) or 0
             total[c] += v
             grand += v
-    out_rows = [_fmt_row(r) for r in rows]
+    out_rows = [_fmt_row(r, nat) for r in rows]
     if format == "csv":
-        return _detail_csv(out_rows, total, grand, start, end)
-    return {"start": start, "end": end, "canteen": canteen,
-            "columns": [{"key": c, "label": l} for c, l in DETAIL_COLS],
+        return _detail_csv(out_rows, total, grand, start, end, nat)
+    return {"start": start, "end": end, "canteen": canteen, "nat": nat,
+            "columns": [{"key": c, "label": l} for c, l in _detail_cols(nat)],
             "rows": out_rows, "total": total, "grand": grand,
             "count": len(out_rows)}

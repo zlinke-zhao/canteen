@@ -106,6 +106,13 @@
           <label><span data-i18n="lbl_start">起始日期</span> <input type="date" id="detail-start" /></label>
           <label><span data-i18n="lbl_end">结束日期</span> <input type="date" id="detail-end" /></label>
           <label><span data-i18n="lbl_canteen_f">食堂</span> <select id="detail-canteen" style="min-width:150px"></select></label>
+          <label><span data-i18n="lbl_nat_f">餐厅</span>
+            <select id="detail-nat" style="min-width:150px">
+              <option value="" data-i18n="nat_all">全部</option>
+              <option value="cn" data-i18n="nat_cn">中国餐厅</option>
+              <option value="vn" data-i18n="nat_vn">越南餐厅</option>
+            </select>
+          </label>
           <button id="detail-query" class="primary" data-i18n="btn_query">查询</button>
           <button id="detail-export" class="ghost" data-i18n="btn_export">导出CSV</button>
         </div>

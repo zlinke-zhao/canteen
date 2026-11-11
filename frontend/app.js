@@ -70,6 +70,7 @@ const I18N = {
     lbl_start: "起始日期", lbl_end: "结束日期",
     detail_hint: "按日期范围查询每人每天的明细登记：可查单日，也可查多日。",
     detail_rows: "记录数", detail_total_meals: "总餐次",
+    lbl_nat_f: "餐厅", nat_all: "全部", nat_cn: "中国餐厅", nat_vn: "越南餐厅",
   },
   vi: {
     app_title: "Hệ thống đặt cơm nhà máy", ph_username: "Mã nhân viên", ph_password: "Mật khẩu",
@@ -132,6 +133,7 @@ const I18N = {
     lbl_start: "Từ ngày", lbl_end: "Đến ngày",
     detail_hint: "Truy vấn chi tiết đăng ký từng người từng ngày theo khoảng ngày: có thể một ngày hoặc nhiều ngày.",
     detail_rows: "Số bản ghi", detail_total_meals: "Tổng suất",
+    lbl_nat_f: "Nhà hàng", nat_all: "Tất cả", nat_cn: "Nhà hàng Trung Quốc", nat_vn: "Nhà hàng Việt Nam",
   },
 };
 let LANG = localStorage.getItem("canteen_lang") || "zh";
@@ -847,7 +849,8 @@ $("detail-query").addEventListener("click", async () => {
   const s = $("detail-start").value, e = $("detail-end").value;
   if (!s || !e) return;
   try {
-    const d = await api("GET", `/api/report/detail?start=${s}&end=${e}&canteen=${encodeURIComponent($("detail-canteen").value || "")}`);
+    const q = `start=${s}&end=${e}&canteen=${encodeURIComponent($("detail-canteen").value || "")}&nat=${encodeURIComponent($("detail-nat").value || "")}`;
+    const d = await api("GET", `/api/report/detail?` + q);
     renderDetail(d);
     $("detail-hint").textContent = t("detail_hint") + " " + t("detail_rows") + "：" + d.count;
   } catch (err) { $("detail-table").innerHTML = `<p class="msg err">${esc(err.message)}</p>`; }
@@ -856,7 +859,8 @@ $("detail-export").addEventListener("click", async () => {
   const s = $("detail-start").value, e = $("detail-end").value;
   if (!s || !e) return;
   try {
-    const csv = await apiText(`/api/report/detail?start=${s}&end=${e}&canteen=${encodeURIComponent($("detail-canteen").value || "")}&format=csv`);
+    const q = `start=${s}&end=${e}&canteen=${encodeURIComponent($("detail-canteen").value || "")}&nat=${encodeURIComponent($("detail-nat").value || "")}&format=csv`;
+    const csv = await apiText(`/api/report/detail?` + q);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
