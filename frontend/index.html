@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工厂食堂预约系统</title>
+  <link rel="stylesheet" href="static/style.css?v=20261110b" />
+</head>
+<body>
+  <!-- 登录页 -->
+  <div id="login-page" class="login-wrap">
+    <div class="login-card">
+      <h1 data-i18n="app_title">工厂食堂预约系统</h1>
+      <p class="sub">FACTORY CANTEEN BOOKING</p>
+      <input id="username" type="text" data-i18n-ph="ph_username" placeholder="工号" autocomplete="username" />
+      <input id="password" type="password" data-i18n-ph="ph_password" placeholder="密码" autocomplete="current-password" />
+      <button id="login-btn" data-i18n="btn_login">登录</button>
+      <div id="login-msg" class="msg"></div>
+      <p class="hint" data-i18n="login_hint">使用 ERP 工号登录（与 pass_hd 账号一致）</p>
+    </div>
+  </div>
+
+  <!-- 主应用 -->
+  <div id="app-page" class="app hidden">
+    <header class="topbar">
+      <div class="brand"><span data-i18n="brand">食堂预约</span> <span id="who"></span></div>
+      <nav>
+        <button class="nav-btn active" data-view="order" data-i18n="nav_order">点餐</button>
+        <button class="nav-btn" data-view="daily" data-i18n="nav_daily">日报</button>
+        <button class="nav-btn" data-view="monthly" data-i18n="nav_monthly">月报</button>
+        <button class="nav-btn settings-only hidden" data-view="settings" data-i18n="nav_settings">设定</button>
+        <button id="lang-btn" class="nav-btn ghost" title="Switch language">Tiếng Việt</button>
+        <button id="logout-btn" class="nav-btn ghost" data-i18n="btn_logout">登出</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- 点餐 -->
+      <section id="view-order" class="view">
+        <h2 data-i18n="order_title">点餐登记</h2>
+        <div class="row">
+          <label><span data-i18n="lbl_canteen">用餐食堂</span> <select id="canteen-sel" style="min-width:170px"></select></label>
+          <label><span data-i18n="lbl_date_from">日期从</span> <input type="date" id="date-from" /></label>
+          <label id="date-to-label"><span data-i18n="lbl_date_to">到</span> <input type="date" id="date-to" /></label>
+          <button id="range-search" class="ghost" data-i18n="btn_search">搜索</button>
+        </div>
+        <div class="row">
+          <span class="lbl" data-i18n="lbl_nat">点餐对象</span>
+          <label class="radio"><input type="radio" name="nat" id="nat-tq" value="tq" checked /> <span data-i18n="opt_nat_tq">中国员工点餐</span></label>
+          <label class="radio"><input type="radio" name="nat" id="nat-vn" value="vn" /> <span data-i18n="opt_nat_vn">越南员工点餐</span></label>
+        </div>
+        <div class="row">
+          <label class="chk-label"><input type="checkbox" id="guest-mode" /> <span data-i18n="chk_guest">客户用餐登记</span></label>
+          <span id="guest-box" class="hidden">
+            <span data-i18n="lbl_guest_count">用餐人数</span> <input type="number" id="guest-count" value="1" min="1" max="99" style="width:70px" />
+            <button id="guest-add" class="ghost" data-i18n="btn_add">添加</button>
+          </span>
+        </div>
+        <div class="row">
+          <label class="chk-label mode-self"><input type="checkbox" id="mode-self" checked /> <span data-i18n="chk_mode_self">个人点餐</span></label>
+          <label><span data-i18n="lbl_emp_search">按工号搜索</span> <input type="text" id="emp-kw" data-i18n-ph="ph_emp_kw" placeholder="输入工号或姓名后回车" style="width:180px" /></label>
+          <button id="emp-search" class="ghost" data-i18n="btn_search2">搜索</button>
+        </div>
+        <div class="row">
+          <label class="chk-label"><input type="checkbox" id="mode-dept" /> <span data-i18n="chk_mode_dept">按部门点</span></label>
+          <select id="dept-sel" style="min-width:200px"></select>
+        </div>
+        <p class="muted" id="order-hint"></p>
+        <div id="order-msg" class="msg"></div>
+        <div id="order-grid"></div>
+        <div class="actions" style="margin-top:12px">
+          <button id="save-order" class="primary" data-i18n="btn_save_all">保存全部</button>
+        </div>
+      </section>
+
+      <!-- 日报 -->
+      <section id="view-daily" class="view hidden">
+        <h2 data-i18n="daily_title">每日各部门登记 · BIỂU BÁO CƠM HÀNG NGÀY</h2>
+        <div class="row">
+          <label><span data-i18n="lbl_date">日期</span> <input type="date" id="daily-date" /></label>
+          <label><span data-i18n="lbl_canteen_f">食堂</span> <select id="daily-canteen" style="min-width:150px"></select></label>
+          <button id="daily-query" class="primary" data-i18n="btn_query">查询</button>
+          <button id="daily-export" class="ghost" data-i18n="btn_export">导出CSV</button>
+        </div>
+        <div id="daily-table"></div>
+      </section>
+
+      <!-- 月报 -->
+      <section id="view-monthly" class="view hidden">
+        <h2 data-i18n="monthly_title">月度汇总 · THỐNG KÊ THÁNG</h2>
+        <div class="row">
+          <label><span data-i18n="lbl_year">年</span> <input type="number" id="rep-year" style="width:90px" /></label>
+          <label><span data-i18n="lbl_month">月</span> <input type="number" id="rep-month" min="1" max="12" style="width:70px" /></label>
+          <label><span data-i18n="lbl_canteen_f">食堂</span> <select id="monthly-canteen" style="min-width:150px"></select></label>
+          <button id="monthly-query" class="primary" data-i18n="btn_query">查询</button>
+          <button id="monthly-export" class="ghost" data-i18n="btn_export">导出CSV</button>
+        </div>
+        <div id="monthly-table"></div>
+      </section>
+
+      <!-- 设定 -->
+      <section id="view-settings" class="view hidden">
+        <h2 data-i18n="settings_title">设定</h2>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="auth" data-i18n="tab_auth">页签一 · 统计授权</button>
+          <button class="tab-btn hidden" data-tab="canteen" id="tab-canteen-btn" data-i18n="tab_canteen">页签二 · 点餐食堂</button>
+          <button class="tab-btn hidden" data-tab="mealtimes" id="tab-mealtimes-btn" data-i18n="tab_mealtimes">页签三 · 开餐时间</button>
+        </div>
+
+        <!-- 页签一：统计授权 -->
+        <div id="tab-auth">
+          <p class="muted" data-i18n="auth_desc">名单内人员可查看日报 / 月报，也可以在本页为本名单添加或移除人员。</p>
+          <div class="row">
+            <input type="text" id="auth-kw" data-i18n-ph="ph_auth_kw" placeholder="搜索工号/姓名添加授权" />
+            <select id="auth-sel" size="6" style="min-width:320px"></select>
+            <button id="auth-add" class="primary" data-i18n="btn_auth_add">添加授权</button>
+          </div>
+          <table class="grid" id="auth-table">
+            <thead><tr>
+              <th data-i18n="th_emp_no">工号</th>
+              <th data-i18n="th_name">姓名</th>
+              <th data-i18n="th_granted_by">授权人</th>
+              <th data-i18n="th_action">操作</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- 页签二：点餐食堂 -->
+        <div id="tab-canteen" class="hidden">
+          <p class="muted" data-i18n="canteen_desc">食堂对应「部门节点代号」：下属部门代号自动包含上级代号，因此填 1013 即覆盖 1013 及其全部下级部门。</p>
+          <div class="row" style="margin:14px 0 6px">
+            <span class="muted" data-i18n="canteen_desc2">提示：点餐页的「中国/越南员工点餐」选择决定部门名单范围与写入餐厅；按工号点餐不受限。</span>
+          </div>
+          <div id="canteen-rows"></div>
+          <div class="row" style="margin-top:10px">
+            <button id="canteen-add-row" class="ghost" data-i18n="btn_add_row">添加一行</button>
+            <button id="canteen-save" class="primary" data-i18n="btn_save_canteen">保存食堂设定</button>
+          </div>
+          <div id="canteen-msg" class="msg"></div>
+        </div>
+
+        <!-- 页签三：开餐时间 -->
+        <div id="tab-mealtimes" class="hidden">
+          <p class="muted">设定各餐次开餐时间（用于「只能点 2 小时以后的餐」判定）。规则：过去日期不可点；今天须 开餐时间 ≥ 当前时间 + 2 小时；未来日期全部可点。</p>
+          <div class="row" id="meal-time-rows"></div>
+          <div class="row" style="margin-top:10px">
+            <button id="meal-time-save" class="primary" data-i18n="btn_save_meal_time">保存开餐时间</button>
+          </div>
+          <div id="meal-time-msg" class="msg"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="static/app.js?v=20261110b"></script>
+</body>
+</html>

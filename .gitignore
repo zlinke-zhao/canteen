@@ -1,0 +1,38 @@
+# ===== 密钥 / 本地配置（绝不提交） =====
+.env
+*.env
+.env.*
+!.env.example
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ===== 日志 =====
+*.log
+logs/
+
+# ===== 构建产物 / 打包 =====
+build/
+dist/
+*.exe
+*.spec
+*.zip
+
+# ===== 调试/自测脚本与截图（保留在本地，不进仓库） =====
+_*
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+
+# ===== 系统 / 编辑器 =====
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

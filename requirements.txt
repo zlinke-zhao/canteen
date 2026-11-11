@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+pymssql
+pyjwt
+python-dotenv
+requests
+bcrypt
