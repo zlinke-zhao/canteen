@@ -864,7 +864,10 @@ $("detail-export").addEventListener("click", async () => {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `食堂明细_${s}_${e}.csv`;
+    // 文件名带上餐厅维度，便于分别导出时区分
+    const nat = $("detail-nat").value || "";
+    const natTag = nat === "cn" ? "中国餐厅" : nat === "vn" ? "越南餐厅" : "全部";
+    a.download = `食堂明细_${natTag}_${s}_${e}.csv`;
     a.click();
   } catch (err) { $("detail-table").innerHTML = `<p class="msg err">${esc(err.message)}</p>`; }
 });

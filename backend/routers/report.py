@@ -40,6 +40,21 @@ def _meals_for(nat):
 def _detail_cols(nat):
     return DETAIL_BASE + _meals_for(nat) + DETAIL_TAIL
 
+
+def _has_meal_cond(nat):
+    """按餐厅维度过滤：在该餐厅完全没点餐的员工不列入明细。
+
+    nat='cn' -> 只保留中餐合计 > 0 的行
+    nat='vn' -> 只保留越餐合计 > 0 的行
+    nat=''（全部）-> 只保留中餐+越餐合计 > 0 的行（中越都没点的不列出）
+    """
+    meals = _meals_for(nat)
+    if not meals:
+        return ""
+    expr = " + ".join("ISNULL(o.%s,0)" % c for c, _ in meals)
+    return " AND (%s) > 0" % expr
+
+
 # 5 个餐别（含新增「午餐」wucan）；每餐分 中(cn)/越(vn) 两列
 MEALS = ["breakfast", "lunch", "wucan", "dinner", "midnight"]
 MEAL_LABELS = {"breakfast": "早餐", "lunch": "中餐", "wucan": "午餐",
@@ -147,8 +162,11 @@ def _detail_csv(rows, total, grand, start, end, nat=""):
     trow += ["", "", "总餐次 %d" % grand]
     w.writerow(trow)
     body = buf.getvalue().encode("utf-8-sig")  # BOM 保证 Excel 中文不乱码
-    ascii_name = "canteen_detail_%s_%s.csv" % (start, end)
-    cn_name = "食堂明细_%s_%s.csv" % (start, end)
+    # 文件名带上餐厅维度，便于分别导出时区分
+    nat_tag = {"cn": "中国餐厅", "vn": "越南餐厅"}.get(nat, "全部")
+    ascii_tag = {"cn": "CN", "vn": "VN"}.get(nat, "ALL")
+    ascii_name = "canteen_detail_%s_%s_%s.csv" % (ascii_tag, start, end)
+    cn_name = "食堂明细_%s_%s_%s.csv" % (nat_tag, start, end)
     disp = "attachment; filename=\"%s\"; filename*=UTF-8''%s" % (ascii_name, quote(cn_name))
     return Response(content=body, media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": disp})
@@ -170,6 +188,8 @@ def detail(start: str = Query(...), end: str = Query(...),
     if canteen:
         where += " AND o.canteen_code = %s"
         params.append(canteen)
+    # 按餐厅过滤：在该餐厅完全没点餐的员工不列出
+    where += _has_meal_cond(nat)
     base_cols = ", ".join("o.%s" % c for c, _ in DETAIL_BASE)
     meal_cols = ", ".join("ISNULL(o.%s,0) AS %s" % (c, c) for c, _ in meals)
     tail_cols = ", ".join("o.%s" % c for c, _ in DETAIL_TAIL)
