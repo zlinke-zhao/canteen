@@ -28,6 +28,7 @@
         <button class="nav-btn active" data-view="order" data-i18n="nav_order">点餐</button>
         <button class="nav-btn" data-view="daily" data-i18n="nav_daily">日报</button>
         <button class="nav-btn" data-view="monthly" data-i18n="nav_monthly">月报</button>
+        <button class="nav-btn settings-only hidden" data-view="detail" data-i18n="nav_detail">明细</button>
         <button class="nav-btn settings-only hidden" data-view="settings" data-i18n="nav_settings">设定</button>
         <button id="lang-btn" class="nav-btn ghost" title="Switch language">Tiếng Việt</button>
         <button id="logout-btn" class="nav-btn ghost" data-i18n="btn_logout">登出</button>
@@ -96,6 +97,20 @@
           <button id="monthly-export" class="ghost" data-i18n="btn_export">导出CSV</button>
         </div>
         <div id="monthly-table"></div>
+      </section>
+
+      <!-- 明细报表 -->
+      <section id="view-detail" class="view hidden">
+        <h2 data-i18n="detail_title">明细报表 · BÁO CÁO CHI TIẾT</h2>
+        <div class="row">
+          <label><span data-i18n="lbl_start">起始日期</span> <input type="date" id="detail-start" /></label>
+          <label><span data-i18n="lbl_end">结束日期</span> <input type="date" id="detail-end" /></label>
+          <label><span data-i18n="lbl_canteen_f">食堂</span> <select id="detail-canteen" style="min-width:150px"></select></label>
+          <button id="detail-query" class="primary" data-i18n="btn_query">查询</button>
+          <button id="detail-export" class="ghost" data-i18n="btn_export">导出CSV</button>
+        </div>
+        <p class="muted" id="detail-hint"></p>
+        <div id="detail-table"></div>
       </section>
 
       <!-- 设定 -->

@@ -116,3 +116,7 @@ label.mode-self { color: #c00; font-weight: bold; }
 
 /* 报表：中国 / 越南 左右两块之间加分隔线 */
 .report-table .blk-sep { border-left: 2px solid #888; }
+/* 明细报表列多，允许横向滚动而非压缩 */
+#detail-table { overflow-x: auto; }
+.detail-table { width: auto; min-width: 100%; white-space: nowrap; }
+.detail-table td, .detail-table th { white-space: nowrap; }

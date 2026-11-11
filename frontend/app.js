@@ -66,6 +66,10 @@ const I18N = {
     sel_all: "全选", sel_all_hint: "点击将该餐批量勾给全部人员",
     sel_all_done: "已全选 {meal}（按班次互斥已自动取消对班）",
     csv_total: "汇总",
+    nav_detail: "明细", detail_title: "明细报表 · BÁO CÁO CHI TIẾT",
+    lbl_start: "起始日期", lbl_end: "结束日期",
+    detail_hint: "按日期范围查询每人每天的明细登记：可查单日，也可查多日。",
+    detail_rows: "记录数", detail_total_meals: "总餐次",
   },
   vi: {
     app_title: "Hệ thống đặt cơm nhà máy", ph_username: "Mã nhân viên", ph_password: "Mật khẩu",
@@ -124,6 +128,10 @@ const I18N = {
     sel_all: "Chọn tất cả", sel_all_hint: "Nhấn để tích bữa này cho tất cả mọi người",
     sel_all_done: "Đã chọn tất cả {meal} (theo ca loại trừ nhau, tự bỏ ca đối diện)",
     csv_total: "Tổng cộng",
+    nav_detail: "Chi tiết", detail_title: "Báo cáo chi tiết · BÁO CÁO CHI TIẾT",
+    lbl_start: "Từ ngày", lbl_end: "Đến ngày",
+    detail_hint: "Truy vấn chi tiết đăng ký từng người từng ngày theo khoảng ngày: có thể một ngày hoặc nhiều ngày.",
+    detail_rows: "Số bản ghi", detail_total_meals: "Tổng suất",
   },
 };
 let LANG = localStorage.getItem("canteen_lang") || "zh";
@@ -224,10 +232,11 @@ async function enterApp() {
 // ---------- 导航 ----------
 function switchView(v) {
   document.querySelectorAll(".nav-btn[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === v));
-  ["order", "daily", "monthly", "settings"].forEach(n => show($("view-" + n), n === v));
+  ["order", "daily", "monthly", "detail", "settings"].forEach(n => show($("view-" + n), n === v));
   if (v === "order") initOrder();
   if (v === "daily") initDaily();
   if (v === "monthly") initMonthly();
+  if (v === "detail") initDetail();
   if (v === "settings") loadSettings();
 }
 
@@ -791,6 +800,70 @@ $("monthly-query").addEventListener("click", async () => {
   } catch (e) { $("monthly-table").innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
 });
 $("monthly-export").addEventListener("click", () => exportCsv("monthly-table", `食堂月报_${$("rep-year").value}-${$("rep-month").value}.csv`));
+
+// 明细报表（按日期范围，单日/多日）
+async function initDetail() {
+  const d = todayStr();
+  $("detail-start").value = d; $("detail-end").value = d;
+  $("detail-hint").textContent = t("detail_hint");
+  await fillCanteenFilter("detail-canteen");
+}
+// 带鉴权地取原始文本（用于 CSV 下载，避免无 token 的 <a> 直链）
+async function apiText(path) {
+  const opt = { method: "GET", headers: {} };
+  if (state.token) opt.headers["Authorization"] = "Bearer " + state.token;
+  const r = await fetch(BASE + path, opt);
+  if (r.status === 401) { logout(); throw new Error(t("err_token")); }
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || ("Error " + r.status)); }
+  return r.text();
+}
+function renderDetail(data) {
+  const el = $("detail-table");
+  if (!data.rows.length) { el.innerHTML = '<p class="muted">' + esc(t("report_none")) + "</p>"; el.dataset.json = ""; return; }
+  const cols = data.columns;
+  let head = "<thead><tr>";
+  cols.forEach(c => head += `<th>${esc(c.label)}</th>`);
+  head += "</tr></thead>";
+  let body = "<tbody>";
+  data.rows.forEach(r => {
+    body += "<tr>";
+    cols.forEach(c => body += `<td>${esc(r[c.key])}</td>`);
+    body += "</tr>";
+  });
+  body += "</tbody>";
+  const tt = data.total, grand = data.grand;
+  let foot = `<tfoot><tr class="total">`;
+  cols.forEach((c, i) => {
+    let v = (tt[c.key] !== undefined) ? tt[c.key] : "";
+    if (i === 2) v = t("csv_total");
+    if (c.key === "created_at") v = t("detail_total_meals") + " " + grand;
+    foot += `<td>${esc(v)}</td>`;
+  });
+  foot += "</tr></tfoot>";
+  el.innerHTML = `<table class="report-table detail-table">${head}${body}${foot}</table>`;
+  el.dataset.json = JSON.stringify(data);
+}
+$("detail-query").addEventListener("click", async () => {
+  const s = $("detail-start").value, e = $("detail-end").value;
+  if (!s || !e) return;
+  try {
+    const d = await api("GET", `/api/report/detail?start=${s}&end=${e}&canteen=${encodeURIComponent($("detail-canteen").value || "")}`);
+    renderDetail(d);
+    $("detail-hint").textContent = t("detail_hint") + " " + t("detail_rows") + "：" + d.count;
+  } catch (err) { $("detail-table").innerHTML = `<p class="msg err">${esc(err.message)}</p>`; }
+});
+$("detail-export").addEventListener("click", async () => {
+  const s = $("detail-start").value, e = $("detail-end").value;
+  if (!s || !e) return;
+  try {
+    const csv = await apiText(`/api/report/detail?start=${s}&end=${e}&canteen=${encodeURIComponent($("detail-canteen").value || "")}&format=csv`);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `食堂明细_${s}_${e}.csv`;
+    a.click();
+  } catch (err) { $("detail-table").innerHTML = `<p class="msg err">${esc(err.message)}</p>`; }
+});
 
 // ---------- 设定页 ----------
 function loadSettings() {
